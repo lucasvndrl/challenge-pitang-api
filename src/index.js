@@ -12,6 +12,7 @@ const { MONGO_URL, HTTP_PORT } = process.env
 mongoose.connect(MONGO_URL, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
+  useFindAndModify: false,
 })
 
 app.use(express.json())

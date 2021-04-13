@@ -42,6 +42,37 @@ class Appointment {
       res.status(400).json({ message: 'ERROR' })
     }
   }
+
+  async update(req, res) {
+    const {
+      body,
+      params: { id },
+    } = req
+
+    const appointment = await AppointmentModel.findByIdAndUpdate(id, body, {
+      new: true,
+    })
+
+    res.send({ appointment })
+  }
+
+  async remove(req, res) {
+    const { id } = req.params
+
+    try {
+      const appointment = await AppointmentModel.findById(id)
+
+      if (!appointment) {
+        return res.send({ message: 'Appointment does not exist.' })
+      }
+
+      await appointment.remove()
+
+      res.send({ message: 'Appointment Removed' })
+    } catch (e) {
+      res.status(400).send({ message: 'ERROR' })
+    }
+  }
 }
 
 module.exports = new Appointment()
