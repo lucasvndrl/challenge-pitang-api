@@ -4,6 +4,6 @@ const AppointmentRouter = require('./appointment.route')
 
 const Routes = express.Router()
 
-Routes.use('/api', AppointmentRouter)
+Routes.use('/appointment', AppointmentRouter)
 
 module.exports = Routes

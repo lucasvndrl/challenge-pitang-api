@@ -1,16 +1,41 @@
-const { request } = require('express')
-const AppointmentModel = require('../models/appointment.model')
-const Yup = require('yup')
-
+const { request } = require('express');
+const AppointmentModel = require('../models/appointment.model');
+const Yup = require('yup');
+const Hours = require('date-fns');
+const validateElderly = require('../validations/validateElderly');
 class Appointment {
   async index(req, res) {
     try {
-      const appointments = await AppointmentModel.find()
+      const appointments = await AppointmentModel.find();
 
-      res.send({ appointments })
+      res.send({ appointments });
     } catch (e) {
-      res.status(400).json({ message: 'ERRO' })
+      res.status(400).json({ message: 'ERRO' });
     }
+  }
+
+  async getByDate(req, res) {
+    const body = {
+      ...req.body,
+      selectedDate: new Date(req.body.selectedDate),
+    };
+
+    const firstDate = new Date(body.selectedDate);
+
+    firstDate.setHours(21);
+    firstDate.setMinutes(0);
+
+    const secondDate = new Date(
+      body.selectedDate.setDate(body.selectedDate.getDate() + 1)
+    );
+    const response = await AppointmentModel.find({
+      selectedDate: {
+        $gte: new Date(firstDate),
+        $lte: new Date(secondDate),
+      },
+    });
+
+    return res.json(response);
   }
 
   async store(req, res) {
@@ -18,30 +43,116 @@ class Appointment {
       ...req.body,
       birthday: new Date(req.body.birthday),
       selectedDate: new Date(req.body.selectedDate),
-    }
+    };
 
     const schema = Yup.object().shape({
       name: Yup.string().required('Name field required'),
       birthday: Yup.date().required('Birthday field required'),
-      selectedDate: Yup.date().required('Selected date required'),
-    })
+      selectedDate: Yup.date()
+        .min(new Date(), 'Data inválida')
+        .required('Selected date required'),
+    });
 
     try {
-      await schema.validate(body, { abortEarly: false })
+      await schema.validate(body, { abortEarly: false });
     } catch (error) {
-      return res.status(400).json({ error })
+      return res.status(400).json({ message: error.message });
     }
 
-    body.attended = false
+    if (Hours.getHours(new Date()) < 3 && Hours.getHours(new Date()) > 15) {
+      return res.status(400).json({ message: 'Horário inválido' });
+    }
+    body.attended = false;
+
+    const firstDate = new Date(body.selectedDate);
+
+    firstDate.setHours(21);
+    firstDate.setMinutes(0);
+
+    const secondDate = new Date(
+      body.selectedDate.setDate(body.selectedDate.getDate() + 1)
+    );
+    const appointmentsToday = await AppointmentModel.find({
+      selectedDate: {
+        $gte: new Date(firstDate),
+        $lte: new Date(secondDate),
+      },
+    });
+
+    if (appointmentsToday.length >= 20) {
+      return res
+        .status(400)
+        .json({ message: 'Não há mais vagas na data selecionada.' });
+    }
+
+    const appointmentsInSelectedHour = await AppointmentModel.find({
+      selectedDate: body.selectedDate,
+    });
+
+    if (appointmentsInSelectedHour.length === 2) {
+      if (!validateElderly(body.birthday)) {
+        return res
+          .status(400)
+          .json({ message: 'Não há mais vagas neste horário.' });
+      }
+      let elderlyCount = appointmentsInSelectedHour.filter((patient) =>
+        validateElderly(patient.birthday)
+      ).length;
+
+      if (elderlyCount === 2) {
+        return res
+          .status(400)
+          .json({ message: 'Não há mais vagas neste horário.' });
+      } else {
+        const notElderly = appointmentsInSelectedHour.filter(
+          (patient) => !validateElderly(patient.birthday)
+        );
+        try {
+          await notElderly[0].remove();
+        } catch (error) {
+          res.status(400).send({ message: 'ERROR' });
+        }
+      }
+    }
+    try {
+      const appointment = await AppointmentModel.create(body);
+
+      res.send({ appointment });
+    } catch (e) {
+      res.status(400).json({ message: 'ERROR' });
+    }
+  }
+
+  async update(req, res) {
+    const {
+      body,
+      params: { id },
+    } = req;
+
+    const appointment = await AppointmentModel.findByIdAndUpdate(id, body, {
+      new: true,
+    });
+
+    res.send({ appointment });
+  }
+
+  async remove(req, res) {
+    const { id } = req.params;
 
     try {
-      const appointment = await AppointmentModel.create(body)
+      const appointment = await AppointmentModel.findById(id);
 
-      res.send({ appointment })
+      if (!appointment) {
+        return res.send({ message: 'Appointment does not exist.' });
+      }
+
+      await appointment.remove();
+
+      res.send({ message: 'Appointment Removed' });
     } catch (e) {
-      res.status(400).json({ message: 'ERROR' })
+      res.status(400).send({ message: 'ERROR' });
     }
   }
 }
 
-module.exports = new Appointment()
+module.exports = new Appointment();
