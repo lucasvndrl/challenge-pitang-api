@@ -15,7 +15,7 @@ Project created as a challenge for a job position at Pitang Agile IT.
 2. Run the command npm i
 3. And finally run npm run dev to run the project
 
-##.env requirements
+## .env requirements
 
 1. MongoDB Atlas server (MONGO_URL)
 2. HTTP_PORT=4444
