@@ -61,12 +61,12 @@ class Appointment {
     }
 
     if (
-      body.selectedDate.getHours() < 3 ||
+      body.selectedDate.getHours() < 6 ||
       (body.selectedDate.getMinutes() > 0 &&
         body.selectedDate.getMinutes() < 30) ||
       (body.selectedDate.getMinutes() > 30 &&
         body.selectedDate.getMinutes() <= 59) ||
-      body.selectedDate.getHours() > 15
+      body.selectedDate.getHours() > 18
     ) {
       return res.status(400).json({ message: 'Horário inválido' })
     }
