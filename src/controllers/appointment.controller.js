@@ -87,7 +87,7 @@ class Appointment {
       },
     })
 
-    if (appointmentsToday.length >= 20) {
+    if (appointmentsToday.length >= 5 && !validateElderly(body.birthday)) {
       return res
         .status(400)
         .json({ message: 'Não há mais vagas na data selecionada.' })
@@ -97,7 +97,10 @@ class Appointment {
       selectedDate: body.selectedDate,
     })
 
-    if (appointmentsInSelectedHour.length === 2) {
+    if (
+      appointmentsInSelectedHour.length === 2 ||
+      (appointmentsToday.length >= 5 && appointmentsInSelectedHour.length === 1)
+    ) {
       if (!validateElderly(body.birthday)) {
         return res
           .status(400)
@@ -107,7 +110,10 @@ class Appointment {
         validateElderly(patient.birthday)
       ).length
 
-      if (elderlyCount === 2) {
+      if (
+        elderlyCount === 2 ||
+        (elderlyCount === 1 && appointmentsToday.length >= 5)
+      ) {
         return res
           .status(400)
           .json({ message: 'Não há mais vagas neste horário.' })
@@ -122,6 +128,7 @@ class Appointment {
         }
       }
     }
+
     try {
       const appointment = await AppointmentModel.create(body)
 
