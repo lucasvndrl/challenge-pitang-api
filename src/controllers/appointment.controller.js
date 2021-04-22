@@ -45,7 +45,7 @@ class Appointment {
     }
 
     const schema = Yup.object().shape({
-      name: Yup.string().required('Name field required'),
+      name: Yup.string().min(3).required('Name field required'),
       birthday: Yup.date()
         .max(new Date(), 'Data inválida')
         .required('Birthday field required'),
@@ -74,12 +74,12 @@ class Appointment {
 
     const firstDate = new Date(body.selectedDate)
 
-    firstDate.setHours(21)
+    firstDate.setHours(0)
     firstDate.setMinutes(0)
 
-    const secondDate = new Date(
-      body.selectedDate.setDate(body.selectedDate.getDate() + 1)
-    )
+    const secondDate = new Date(firstDate)
+    secondDate.setDate(secondDate.getDate() + 1)
+
     const appointmentsToday = await AppointmentModel.find({
       selectedDate: {
         $gte: new Date(firstDate),
@@ -87,7 +87,17 @@ class Appointment {
       },
     })
 
-    if (appointmentsToday.length >= 5 && !validateElderly(body.birthday)) {
+    if (appointmentsToday.length >= 20 && !validateElderly(body.birthday)) {
+      return res
+        .status(400)
+        .json({ message: 'Não há mais vagas na data selecionada.' })
+    }
+
+    let elderlyCountToday = appointmentsToday.filter((patient) =>
+      validateElderly(patient.birthday)
+    ).length
+
+    if (elderlyCountToday >= 20) {
       return res
         .status(400)
         .json({ message: 'Não há mais vagas na data selecionada.' })
@@ -99,7 +109,8 @@ class Appointment {
 
     if (
       appointmentsInSelectedHour.length === 2 ||
-      (appointmentsToday.length >= 5 && appointmentsInSelectedHour.length === 1)
+      (appointmentsToday.length >= 20 &&
+        appointmentsInSelectedHour.length === 1)
     ) {
       if (!validateElderly(body.birthday)) {
         return res
@@ -112,7 +123,7 @@ class Appointment {
 
       if (
         elderlyCount === 2 ||
-        (elderlyCount === 1 && appointmentsToday.length >= 5)
+        (elderlyCount === 1 && appointmentsToday.length >= 20)
       ) {
         return res
           .status(400)
