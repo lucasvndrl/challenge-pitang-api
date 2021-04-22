@@ -2,6 +2,12 @@
 
 Project created as a challenge for a job position at Pitang Agile IT.
 
+## Requirements
+- Node 10+
+- Yarn or npm
+- MongoDB
+
+
 ## Installation 
 ### Using yarn
 
