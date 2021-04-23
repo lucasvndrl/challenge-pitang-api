@@ -2,6 +2,7 @@ const { request } = require('express')
 const AppointmentModel = require('../models/appointment.model')
 const Yup = require('yup')
 const validateElderly = require('../validations/validateElderly')
+
 class Appointment {
   async index(req, res) {
     try {
@@ -45,7 +46,10 @@ class Appointment {
     }
 
     const schema = Yup.object().shape({
-      name: Yup.string().min(3).required('Name field required'),
+      name: Yup.string()
+        .min(3)
+        .required('Name field required')
+        .matches(/^[A-Za-zà-úÀ-Ú ]+$/, 'Name must be only characters'),
       birthday: Yup.date()
         .max(new Date(), 'Data inválida')
         .required('Birthday field required'),
