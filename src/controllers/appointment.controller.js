@@ -101,7 +101,7 @@ class Appointment {
       validateElderly(patient.birthday)
     ).length
 
-    if (elderlyCountToday >= 20) {
+    if (elderlyCountToday === 20) {
       return res
         .status(400)
         .json({ message: 'Não há mais vagas na data selecionada.' })
@@ -110,6 +110,15 @@ class Appointment {
     const appointmentsInSelectedHour = await AppointmentModel.find({
       selectedDate: body.selectedDate,
     })
+
+    if (
+      appointmentsToday.length >= 20 &&
+      appointmentsInSelectedHour.length == 0
+    ) {
+      return res
+        .status(400)
+        .json({ message: 'Não há mais vagas na data selecionada' })
+    }
 
     if (
       appointmentsInSelectedHour.length === 2 ||
@@ -127,7 +136,9 @@ class Appointment {
 
       if (
         elderlyCount === 2 ||
-        (elderlyCount === 1 && appointmentsToday.length >= 20)
+        (elderlyCount === 1 &&
+          appointmentsInSelectedHour === 1 &&
+          appointmentsToday >= 20)
       ) {
         return res
           .status(400)
